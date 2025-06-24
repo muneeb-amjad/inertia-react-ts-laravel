@@ -13,51 +13,17 @@ const mainNavItems: NavItem[] = [
         href: '/dashboard',
         icon: LayoutGrid,
     },
-    {
-        title: 'Brands',
-        href: '/brands',
-        icon: BriefcaseIcon,
-    },
+
     {
         title: 'Frontend Website',
         href: '/',
         icon: Building,
         children: [
-            // {
-            //     title: 'Menu',
-            //     href: '/menus',
-            //     icon: List,
-            // },
-            // {
-            //     title: 'Banners',
-            //     href: '/banners',
-            //     icon: Image,
-            // },
-            // {
-            //     title: 'Pages',
-            //     href: '/pages',
-            //     icon: FileText,
-            // },
-            // {
-            //     title: 'Page Sections',
-            //     href: '/page-sections',
-            //     icon: LayoutTemplate,
-            // },
-            // {
-            //     title: 'Email Templates',
-            //     href: '/email-templates',
-            //     icon: Mail,
-            // },
-            // {
-            //     title: 'Splashes',
-            //     href: '/splashes',
-            //     icon: Sparkles,
-            // },
-            // {
-            //     title: 'Testimonials',
-            //     href: '/testimonials',
-            //     icon: MessageSquareQuote,
-            // },
+            {
+                title: 'Brands',
+                href: '/brands',
+                icon: BriefcaseIcon,
+            },
             {
                 title: 'Blog Category',
                 href: '/blog-categories',
@@ -69,11 +35,6 @@ const mainNavItems: NavItem[] = [
                 icon: PenLine,
             },
         ],
-    },
-    {
-        title: 'Company Details',
-        href: '/head-office-details',
-        icon: Building2,
     },
     {
         title: 'Company Info',
