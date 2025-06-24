@@ -27,7 +27,7 @@ export default function Edit({ brand } : {brand:Brand}) {
             onSuccess: () => reset(),
             onError: (errors) => {
                 if (errors.name) {
-                    brandName.current?.focus(); // just focus the field
+                    brandName.current?.focus(); // focus the field
                 }
             }
         });
