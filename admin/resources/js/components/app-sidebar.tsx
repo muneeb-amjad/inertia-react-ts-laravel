@@ -19,11 +19,6 @@ const mainNavItems: NavItem[] = [
         icon: BriefcaseIcon,
     },
     {
-        title: 'Company Details',
-        href: '/head-office-details',
-        icon: Building2,
-    },
-    {
         title: 'Company Info',
         href: '/',
         icon: Building,
@@ -35,7 +30,7 @@ const mainNavItems: NavItem[] = [
             },
             {
                 title: 'Staff',
-                href: '/users/create',
+                href: '/staff-users',
                 icon: UserPlus,
             },
             {
