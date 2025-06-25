@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Filters\FrontendWebsite\BrandFilter;
 use App\Models\Brand;
 use App\Http\Requests\StoreBrandRequest;
 use App\Http\Requests\UpdateBrandRequest;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class BrandController extends Controller
@@ -12,12 +14,18 @@ class BrandController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request, BrandFilter $filters)
     {
+        $perPage = in_array($request->get('per_page'), [10, 20, 50, 100])
+            ? $request->get('per_page')
+            : 10;
+
         return Inertia::render('Brand/Index', [
-            'brands' => Brand::all(),
+            'filters' => $request->all(['search', 'per_page']),
+            'brands' => Brand::filter($filters)->paginate($perPage)->withQueryString(),
         ]);
     }
+
 
     /**
      * Show the form for creating a new resource.
