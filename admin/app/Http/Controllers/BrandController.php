@@ -24,7 +24,7 @@ class BrandController extends Controller
      */
     public function create()
     {
-        return Inertia::render('Brand/Create');
+        return Inertia::render('Brand/FormPage');
     }
 
     /**
@@ -49,7 +49,7 @@ class BrandController extends Controller
      */
     public function edit(Brand $brand)
     {
-        return Inertia::render('Brand/Edit', ["brand" => $brand]);
+        return Inertia::render('Brand/FormPage', ["brand" => $brand]);
     }
 
     /**
@@ -58,7 +58,7 @@ class BrandController extends Controller
     public function update(UpdateBrandRequest $request, Brand $brand)
     {
         $brand->update($request->validated());
-//        return redirect()->route('brands.index');
+        return redirect()->route('brands.index');
     }
 
 

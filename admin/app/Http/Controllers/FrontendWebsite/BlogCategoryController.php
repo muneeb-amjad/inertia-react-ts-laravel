@@ -2,13 +2,15 @@
 
 namespace App\Http\Controllers\FrontendWebsite;
 
+use App\Http\Controllers\Controller;
 use App\Filters\BlogCategoryFilter;
 use App\helpers\MediaHelper;
-use App\Http\Requests\FrontendWebsite\BlogCategoryRequest;
+use App\Http\Requests\BlogCategoryRequest;
 use App\Models\FrontendWebsite\BlogCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
+
 
 class BlogCategoryController extends Controller
 {
