@@ -23,6 +23,8 @@
         "typescript-eslint": "^8.23.0"
     },
     "dependencies": {
+        "@ckeditor/ckeditor5-build-classic": "^41.4.2",
+        "@ckeditor/ckeditor5-react": "^9.5.0",
         "@headlessui/react": "^2.2.0",
         "@inertiajs/react": "^2.0.0",
         "@radix-ui/react-avatar": "^1.1.3",

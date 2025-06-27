@@ -4,7 +4,7 @@ import { NavUser } from '@/components/nav-user';
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarMenu, SidebarMenuButton, SidebarMenuItem } from '@/components/ui/sidebar';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
-import { BookOpen, BriefcaseIcon, Folder, LayoutGrid, UserPlus, Building, Building2, Settings, Timer, Globe, List, Image, FileText, LayoutTemplate, Mail, Sparkles, MessageSquareQuote, PenLine, Tags } from 'lucide-react';
+import { BookOpen, BriefcaseIcon, Folder, LayoutGrid, UserPlus, Building, Building2, Settings, Timer, Globe, List, Image, FileText, LayoutTemplate, Mail, Sparkles, MessageSquareQuote, PenLine, Tags, File } from 'lucide-react';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -33,6 +33,11 @@ const mainNavItems: NavItem[] = [
                 title: 'Blogs',
                 href: '/blogs',
                 icon: PenLine,
+            },
+            {
+                title: 'Pages',
+                href: '/pages',
+                icon: File,
             },
         ],
     },

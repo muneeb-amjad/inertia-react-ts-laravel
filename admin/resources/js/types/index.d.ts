@@ -45,7 +45,7 @@ export interface User {
 export interface Country {
     id: number;
     name?: string;
-    nicename: string
+    nicename: string;
 }
 
 export interface Brand {
@@ -56,7 +56,7 @@ export interface Brand {
 }
 
 export type PaginatedData<T> = {
-  current_page: number;
+    current_page: number;
     data: any[];
     first_page_url: string;
     from: number;

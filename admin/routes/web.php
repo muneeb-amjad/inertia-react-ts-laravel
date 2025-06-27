@@ -4,6 +4,7 @@ use App\Http\Controllers\BlogController;
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CompanyDetail;
 use App\Http\Controllers\FrontendWebsite\BlogCategoryController;
+use App\Http\Controllers\PageController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -21,6 +22,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::put('/pharmacy/{pharmacy:hash_id}', [CompanyDetail::class, 'update'])->name('pharmacy.update');
 
     Route::resource("staff-users", StaffController::class);
+    Route::resource("pages", PageController::class);
 
     //Resource Controllers
     Route::resource('brands', BrandController::class);

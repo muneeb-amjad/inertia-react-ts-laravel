@@ -36,7 +36,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 export default function index() {
-    const { staff, filters } = usePage<{
+    
+    const { staff, filters, flash } = usePage<{
         staff: PaginatedData<StaffType>,
         filters: {
             search?: string;
@@ -44,6 +45,7 @@ export default function index() {
             per_page?: string;
         }
     }>().props;
+
 
     const [searchTerm, setSearchTerm] = useState(filters?.search || '');
     const [selectedStatus, setSelectedStatus] = useState(filters?.status || 'all');

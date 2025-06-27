@@ -6,16 +6,15 @@ use App\Models\CqcRegistration;
 use App\Models\Staff;
 use App\Models\UserRole;
 use App\Models\UserType;
-use Illuminate\Http\Request as HttpRequest;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
-use Illuminate\Support\Facades\Request;
 
 class StaffController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-    public function index(HttpRequest $request)
+    public function index(Request $request)
     {
         $perPage = in_array($request->get('per_page'), [10, 20, 50, 100])
             ? $request->get('per_page')
@@ -53,7 +52,7 @@ class StaffController extends Controller
     {
         $staff = Staff::create($request->all());
         $staff->pharmacy_staff()->create($request->all());
-        return back();
+        return redirect()->route('staff-users.index')->with('success', 'Record created successfully');
     }
 
     /**
