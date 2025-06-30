@@ -3,12 +3,10 @@
 namespace App\Http\Controllers\FrontendWebsite;
 
 use App\Http\Controllers\Controller;
-use App\Filters\BlogCategoryFilter;
-use App\helpers\MediaHelper;
-use App\Http\Requests\BlogCategoryRequest;
+use App\Filters\FrontendWebsite\BlogCategoryFilter;
+use App\Http\Requests\FrontendWebsite\BlogCategoryRequest;
 use App\Models\FrontendWebsite\BlogCategory;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 
@@ -17,24 +15,27 @@ class BlogCategoryController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    public function index(Request $request, BlogCategoryFilter $filters)
     {
-        return Inertia::render('BlogCategory/Index', [
-            'blog-categories' => BlogCategory::all(),
-        ]);
-        return view('modules.blog-category.index');
-    }
+        $perPage = in_array($request->get('per_page'), [10, 20, 50, 100])
+            ? $request->get('per_page')
+            : 10;
 
-    public function list(Request $request)
-    {
-        $pageSize = $request->get("pageSize", 20);
-        $filters  = new BlogCategoryFilter($request);
-        $list_all = BlogCategory::filter($filters)->orderBy("id", "DESC")->paginate($pageSize);
-        $view = view("modules.blog-category.cdt", [
-            "list_all" => $list_all,
-            "post_arr" => $request->all(),
-        ])->render();
-        return json(["view" => $view]);
+        $categories = BlogCategory::with('parent')
+            ->filter($filters)
+            ->paginate($perPage)
+            ->withQueryString();
+
+        // Get all parent categories for filter dropdown
+        $parentCategories = BlogCategory::whereNull('parent_id')
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
+        return Inertia::render('modules/FrontendWebsite/BlogCategory/Index', [
+            'filters' => $request->all(['search', 'status', 'parent_id', 'per_page']),
+            'categories' => $categories,
+            'parentCategories' => $parentCategories,
+        ]);
     }
 
     /**
@@ -42,7 +43,14 @@ class BlogCategoryController extends Controller
      */
     public function create()
     {
-        return view('modules.blog-category.add_edit');
+        $parentCategories = BlogCategory::whereNull('parent_id')
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
+        return Inertia::render('modules/FrontendWebsite/BlogCategory/FormPage', [
+            'parentCategories' => $parentCategories,
+            'isEdit' => false,
+        ]);
     }
 
     /**
@@ -50,101 +58,88 @@ class BlogCategoryController extends Controller
      */
     public function store(BlogCategoryRequest $request)
     {
-        $obj = BlogCategory::create($this->getCrudInputs($request));
-        $this->saveMedia($obj, $request, "image");
-        session()->flash('success', "Blog category is created successfully");
-        return jsonLink(asset("blog-categories"));
+        BlogCategory::create($request->validated());
+
+        return redirect()
+            ->route('blog-categories.index')
+            ->with('success', 'Blog category created successfully.');
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show(BlogCategory $blogCategory)
     {
-        //
+        $blogCategory->load('parent', 'children');
+
+        return Inertia::render('modules/FrontendWebsite/BlogCategory/Show', [
+            'category' => $blogCategory,
+        ]);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit(BlogCategory $blogCategory)
     {
-        $row_details = BlogCategory::where("hash_id", $id)->first();
-        if ($row_details) {
-            return view('modules.blog-category.add_edit', [
-                'row_details' => $row_details
-            ]);
-        }
-        abort(404);
-        return null;
+        // Exclude the current category and its descendants from parent options
+        $parentCategories = BlogCategory::where('id', '!=', $blogCategory->id)
+            ->whereNull('parent_id')
+            ->whereNotIn('id', $this->getDescendantIds($blogCategory))
+            ->orderBy('title')
+            ->get(['id', 'title']);
+
+        return Inertia::render('modules/FrontendWebsite/BlogCategory/FormPage', [
+            'category' => $blogCategory,
+            'parentCategories' => $parentCategories,
+            'isEdit' => true,
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(BlogCategoryRequest $request, string $id)
+    public function update(BlogCategoryRequest $request, BlogCategory $blogCategory)
     {
-        $row_details = BlogCategory::where("hash_id", $id)->first();
-        if ($row_details) {
-            $data = $this->getCrudInputs($request);
-            $data['slug'] = Str::slug($request->slug);
-            $row_details->update($data);
+        $blogCategory->update($request->validated());
 
-            $remove_media = ["remove_image"];
-            foreach ($remove_media as $each_media) {
-                if ($request->get($each_media) == 1) {
-                    $inputName = str_replace("remove_", "", $each_media);
-                    MediaHelper::removeParentMedia($row_details->$inputName);
-                    $row_details->update([$inputName => null]);
-                }
-            }
-
-            $this->saveMedia($row_details, $request, "image");
-            session()->flash('success', "Blog category is updated successfully");
-            return jsonLink(asset("blog-categories"));
-        }
-        return message("Blog category does not found", 401) ;
+        return redirect()
+            ->route('blog-categories.index')
+            ->with('success', 'Blog category updated successfully.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy(BlogCategory $blogCategory)
     {
-        //
+        // Check if category has children
+        if ($blogCategory->children()->exists()) {
+            return redirect()
+                ->route('blog-categories.index')
+                ->with('error', 'Cannot delete category that has subcategories.');
+        }
+
+        $blogCategory->delete();
+
+        return redirect()
+            ->route('blog-categories.index')
+            ->with('success', 'Blog category deleted successfully.');
     }
 
     /**
-     * @param BlogCategory $obj
-     * @param Request $request
-     * @param string $inputName
+     * Get all descendant IDs of a category (to prevent circular references)
      */
-    private function saveMedia(BlogCategory $obj, Request $request, string $inputName)
+    private function getDescendantIds(BlogCategory $category)
     {
-        if ($request->hasFile($inputName)) {
-            if ($obj->$inputName) {
-                MediaHelper::removeParentMedia($obj->$inputName);
-            }
+        $descendants = collect();
 
-            $slug = "blog-category/$obj->slug";
-
-            MediaHelper::uploadParentMedia($request->file($inputName), $slug, $slug);
-            $obj->update([
-                $inputName => $slug
-            ]);
+        $children = $category->children;
+        foreach ($children as $child) {
+            $descendants->push($child->id);
+            $descendants = $descendants->merge($this->getDescendantIds($child));
         }
-    }
 
-    private function getCrudInputs(Request $request)
-    {
-        return [
-            "title" => $request->title,
-            "description" => $request->description,
-            "status" => $request->status,
-            "seo_title" => $request->seo_title,
-            "seo_keywords" => $request->seo_keywords,
-            "seo_description" => $request->seo_description,
-        ];
+        return $descendants->toArray();
     }
-
 }

@@ -2,7 +2,7 @@
 
 namespace App\Models\FrontendWebsite;
 
-use App\Filters\BlogCategoryFilter;
+use App\Filters\FrontendWebsite\BlogCategoryFilter;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,34 +12,107 @@ class BlogCategory extends Model
 {
     use HasFactory;
 
-    protected $guarded = ["id"];
+    protected $fillable = [
+        'parent_id',
+        'hash_id',
+        'title',
+        'slug',
+        'image',
+        'description',
+        'status',
+        'seo_title',
+        'seo_keywords',
+        'seo_description'
+    ];
 
-    protected static function booted()
-    {
-        static::created(function ($obj) {
-            $obj->hash_id = hashId();
-
-            $slug = Str::slug($obj->title);
-            $obj->slug = $slug;
-            $exist = self::where("slug", $slug)->first();
-            if ($exist) {
-                $obj->slug = Str::slug("$obj->title $obj->id");
-            }
-            $obj->seo_title = $obj->title;
-            $obj->seo_keywords = $obj->title;
-            $obj->seo_description = $obj->title;
-            $obj->save();
-        });
-    }
+    protected $casts = [
+        'status' => 'string',
+    ];
 
     /**
-     * Apply all relevant item filters.
-     * @param Builder    $query
-     * @param BlogCategoryFilter $filter
-     * @return Builder
+     * Apply all relevant filters.
      */
     public function scopeFilter(Builder $query, BlogCategoryFilter $filter): Builder
     {
         return $filter->apply($query);
+    }
+
+    /**
+     * Get the parent category.
+     */
+    public function parent()
+    {
+        return $this->belongsTo(BlogCategory::class, 'parent_id');
+    }
+
+    /**
+     * Get the child categories.
+     */
+    public function children()
+    {
+        return $this->hasMany(BlogCategory::class, 'parent_id');
+    }
+
+    /**
+     * Get all descendants (children, grandchildren, etc.)
+     */
+    public function descendants()
+    {
+        return $this->children()->with('descendants');
+    }
+
+    /**
+     * Automatically generate slug when creating/updating
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->slug) && !empty($model->title)) {
+                $model->slug = Str::slug($model->title);
+            }
+            if (empty($model->hash_id)) {
+                $model->hash_id = Str::random(20);
+            }
+        });
+
+        static::updating(function ($model) {
+            if ($model->isDirty('title') && !$model->isDirty('slug')) {
+                $model->slug = Str::slug($model->title);
+            }
+        });
+    }
+
+    /**
+     * Get the category's full path (Parent > Child > Grandchild)
+     */
+    public function getFullPathAttribute()
+    {
+        $path = collect([$this->title]);
+        $parent = $this->parent;
+
+        while ($parent) {
+            $path->prepend($parent->title);
+            $parent = $parent->parent;
+        }
+
+        return $path->implode(' > ');
+    }
+
+    /**
+     * Scope for root categories (no parent)
+     */
+    public function scopeRoots(Builder $query)
+    {
+        return $query->whereNull('parent_id');
+    }
+
+    /**
+     * Scope for active categories
+     */
+    public function scopeActive(Builder $query)
+    {
+        return $query->where('status', '1');
     }
 }
