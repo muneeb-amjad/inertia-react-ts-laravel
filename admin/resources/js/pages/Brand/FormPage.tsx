@@ -27,10 +27,7 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
             ? put(route('brands.update', brand.id))
             : post(route('brands.store'));
 
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-expect-error
-        request({
-            forceFormData: true,
+        const formData = {
             preserveScroll: true,
             onSuccess: () => {
                 toast.success(isEdit ? 'Brand updated successfully' : 'Brand created successfully');
@@ -42,7 +39,16 @@ export default function BrandFormPage({ brand }: BrandFormPageProps) {
                     brandName.current?.focus();
                 }
             },
-        });
+        };
+
+        if(isEdit){
+            put(route('brands.update', brand.id),formData)
+        }
+        else{
+            post(route('brands.store'),formData);
+        }
+
+        // request(formData, isEdit);
     };
 
     return (

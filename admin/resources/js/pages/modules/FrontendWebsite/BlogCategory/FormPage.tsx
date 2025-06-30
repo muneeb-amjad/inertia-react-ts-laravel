@@ -17,8 +17,9 @@ import { type BreadcrumbItem } from '@/types';
 import AppLayout from '@/layouts/app-layout';
 import { FormEventHandler } from 'react';
 import { ArrowLeft, Save } from 'lucide-react';
+import ImageUpload from '@/components/ui/image-upload';
+import CKEditor from '@/components/ui/ckeditor';
 
-// Blog Category types
 interface BlogCategory {
     id: number;
     parent_id: number | null;
@@ -60,7 +61,7 @@ export default function BlogCategoryForm() {
         parent_id: category?.parent_id?.toString() || '0',
         title: category?.title || '',
         slug: category?.slug || '',
-        image: category?.image || '',
+        image: null as File | null,
         description: category?.description || '',
         status: category?.status ? '1' : '0',
         seo_title: category?.seo_title || '',
@@ -74,6 +75,7 @@ export default function BlogCategoryForm() {
         if (isEditing) {
             put(route('blog-categories.update', category.id), {
                 preserveScroll: true,
+                forceFormData: true,
                 onError: (errors) => {
                     console.log("error :: ", errors);
                 },
@@ -81,7 +83,10 @@ export default function BlogCategoryForm() {
         } else {
             post(route('blog-categories.store'), {
                 preserveScroll: true,
-                onSuccess: () => reset(),
+                forceFormData: true,
+                onSuccess: () => {
+                    reset();
+                },
                 onError: (errors) => {
                     console.log("error :: ", errors);
                 },
@@ -93,7 +98,6 @@ export default function BlogCategoryForm() {
     const handleTitleChange = (value: string) => {
         setData('title', value);
 
-        // Auto-generate slug if slug is empty or we're creating a new category
         if (!data.slug || !isEditing) {
             const slug = value
                 .toLowerCase()
@@ -103,7 +107,6 @@ export default function BlogCategoryForm() {
         }
     };
 
-    // Character count helpers
     const seoTitleCount = data.seo_title.length;
     const seoDescriptionCount = data.seo_description.length;
     const isSeotitleOverLimit = seoTitleCount > 70;
@@ -122,7 +125,7 @@ export default function BlogCategoryForm() {
                             <div className="h-14 flex-none flex items-center justify-center">
                                 <Link
                                     className={buttonVariants({ variant: 'outline', size: 'sm' })}
-                                    href="/blog-categories"
+                                    href="{route('blog-categories.index')}"
                                 >
                                     <ArrowLeft className="h-4 w-4 mr-2" />
                                     Back
@@ -186,76 +189,31 @@ export default function BlogCategoryForm() {
                                         </Select>
                                         <InputError message={errors.status} />
                                     </div>
-
-                                    {/* Parent Category */}
-                                    {parentCategories.length > 0 && (
-                                        <div className="grid gap-2">
-                                            <Label htmlFor="parent_id">Parent Category</Label>
-                                            <Select
-                                                value={data.parent_id}
-                                                onValueChange={(value) => setData('parent_id', value)}
-                                            >
-                                                <SelectTrigger className={errors.parent_id ? 'border-red-500' : ''}>
-                                                    <SelectValue placeholder="Select parent category" />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectGroup>
-                                                        <SelectLabel>Parent Category</SelectLabel>
-                                                        <SelectItem value="0">None (Root Category)</SelectItem>
-                                                        {parentCategories.map((parent) => (
-                                                            <SelectItem key={parent.id} value={parent.id.toString()}>
-                                                                {parent.title}
-                                                            </SelectItem>
-                                                        ))}
-                                                    </SelectGroup>
-                                                </SelectContent>
-                                            </Select>
-                                            <InputError message={errors.parent_id} />
-                                        </div>
-                                    )}
                                 </div>
 
-                                {/* Featured Image URL */}
-                                <div className="grid gap-2 mt-6">
-                                    <Label htmlFor="image">Featured Image URL</Label>
-                                    <Input
-                                        id="image"
-                                        name="image"
-                                        type="url"
-                                        value={data.image}
-                                        onChange={(e) => setData('image', e.target.value)}
-                                        className={errors.image ? 'border-red-500' : ''}
-                                        placeholder="https://example.com/image.jpg"
-                                    />
-                                    <InputError message={errors.image} />
-                                    {data.image && (
-                                        <div className="mt-2">
-                                            <img
-                                                src={data.image}
-                                                alt="Preview"
-                                                className="w-32 h-20 object-cover rounded border"
-                                                onError={(e) => {
-                                                    e.currentTarget.style.display = 'none';
-                                                }}
-                                            />
-                                        </div>
-                                    )}
-                                </div>
+                                {/* Featured Image */}
+                                <ImageUpload
+                                    label="Featured Image"
+                                    name="image"
+                                    value={data.image}
+                                    currentImageUrl={category?.image}
+                                    onChange={(file) => setData('image', file)}
+                                    error={errors.image}
+                                    className="mt-6"
+                                />
 
                                 {/* Description */}
-                                <div className="grid gap-2 mt-6">
-                                    <Label htmlFor="description">Description</Label>
-                                    <textarea
-                                        id="description"
-                                        name="description"
-                                        value={data.description}
-                                        onChange={(e) => setData('description', e.target.value)}
-                                        placeholder="Enter category description"
-                                        rows={4}
-                                        className={`flex min-h-[80px] w-full rounded-md border bg-white px-3 py-2 text-sm placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:cursor-not-allowed disabled:opacity-50 resize-vertical transition-colors ${errors.description ? 'border-red-500' : 'border-gray-300'}`}
-                                    />
-                                    <InputError message={errors.description} />
-                                </div>
+                                <CKEditor
+                                    label="Description"
+                                    name="description"
+                                    value={data.description}
+                                    onChange={(value) => setData('description', value)}
+                                    error={errors.description}
+                                    placeholder="Enter category description..."
+                                    height={150}
+                                    className="mt-6"
+                                    variant="full"
+                                />
                             </div>
 
                             {/* SEO Settings */}

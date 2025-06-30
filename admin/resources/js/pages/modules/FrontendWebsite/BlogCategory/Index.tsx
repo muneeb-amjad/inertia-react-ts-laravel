@@ -172,46 +172,28 @@ export default function Index() {
         });
     }
 
-    // Define table columns
     const columns = [
         {
             key: 'title',
             header: 'Category',
-            className: 'w-[200px]',
+            className: 'w-[60%]',
             render: (category: BlogCategory) => (
                 <div>
-                    <div className="font-medium">{category.title}</div>
-                    {category.parent && (
-                        <div className="text-sm text-gray-500">
-                            Parent: {category.parent.title}
+                    <div className="font-medium text-gray-900">{category.title}</div>
+                    {category.slug && (
+                        <div className="text-sm text-gray-500 mt-1">
+                            {category.slug}
                         </div>
                     )}
                 </div>
             )
         },
         {
-            key: 'slug',
-            header: 'Slug',
-            render: (category: BlogCategory) => (
-                <code className="text-sm bg-gray-100 px-2 py-1 rounded">
-                    {category.slug}
-                </code>
-            )
-        },
-        // {
-        //     key: 'description',
-        //     header: 'Description',
-        //     render: (category: BlogCategory) => (
-        //         <div className="max-w-xs truncate" title={category.description || ''}>
-        //             {category.description || '-'}
-        //         </div>
-        //     )
-        // },
-        {
             key: 'status',
             header: 'Status',
+            className: 'w-[20%]',
             render: (category: BlogCategory) => (
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                <span className={`inline-flex px-2 py-1 rounded-full text-xs font-medium ${
                     category.status === '1'
                         ? 'bg-green-100 text-green-800'
                         : 'bg-red-100 text-red-800'
@@ -219,12 +201,6 @@ export default function Index() {
                     {category.status === '1' ? 'Active' : 'Inactive'}
                 </span>
             )
-        },
-        {
-            key: 'created_at',
-            header: 'Created',
-            render: (category: BlogCategory) =>
-                new Date(category.created_at).toLocaleDateString()
         }
     ];
 
@@ -239,16 +215,6 @@ export default function Index() {
             onClick: handleDelete,
             confirmMessage: 'Are you sure you want to delete this category? This action cannot be undone.'
         }
-    ];
-
-    // Prepare parent options for filter
-    const parentOptions = [
-        { value: 'all', label: 'All Categories' },
-        { value: 'root', label: 'Root Categories Only' },
-        ...parentCategories.map(parent => ({
-            value: parent.id.toString(),
-            label: parent.title
-        }))
     ];
 
     // Filter configuration
@@ -306,24 +272,6 @@ export default function Index() {
                             filterTags={filterTags}
                             config={filterConfig}
                         />
-
-                        {/* Custom Parent Filter */}
-                        <div className="flex gap-2 mt-2">
-                            <div className="flex-none">
-                                <Select value={selectedParent} onValueChange={setSelectedParent}>
-                                    <SelectTrigger className="w-[180px]">
-                                        <SelectValue placeholder="Parent Category" />
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {parentOptions.map((option) => (
-                                            <SelectItem key={option.value} value={option.value}>
-                                                {option.label}
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-                        </div>
                     </CardHeader>
 
                     <CardContent>
@@ -334,6 +282,7 @@ export default function Index() {
                             emptyMessage="No blog categories found."
                             emptyMessageWithFilters="No categories found matching your criteria."
                             hasActiveFilters={hasActiveFilters}
+                            actionsColumnClass="w-[20%]"
                         />
                         <Pagination pagination={categories} />
                     </CardContent>

@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests\FrontendWebsite;
 
-use App\Models\FrontendWebsite\BlogCategory;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -18,37 +17,36 @@ class BlogCategoryRequest extends FormRequest
 
     /**
      * Get the validation rules that apply to the request.
+     *
+     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
      */
     public function rules(): array
     {
-        $isUpdate = $this->route('blog_category') !== null;
-        $categoryId = $isUpdate ? $this->route('blog_category')->id : null;
+        $categoryId = $this->route('blogCategory')?->id;
 
-        return [
-            'parent_id' => [
-                'nullable',
-                'exists:blog_categories,id',
-                // For updates, ensure category can't be its own parent
-                $isUpdate ? Rule::notIn([$categoryId]) : '',
-            ],
+        $rules = [
             'title' => 'required|string|max:255',
             'slug' => [
-                'nullable',
+                'required',
                 'string',
                 'max:255',
                 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
-                // For updates, ignore current record's slug
-                $isUpdate
-                    ? Rule::unique('blog_categories', 'slug')->ignore($categoryId)
-                    : 'unique:blog_categories,slug',
+                Rule::unique('blog_categories', 'slug')->ignore($categoryId),
             ],
-            'image' => 'nullable|url|max:500',
+            'parent_id' => 'nullable|exists:blog_categories,id',
             'description' => 'nullable|string|max:1000',
-            'status' => 'required|in:0,1',
+            'status' => 'required|boolean',
             'seo_title' => 'nullable|string|max:70',
             'seo_keywords' => 'nullable|string|max:255',
             'seo_description' => 'nullable|string|max:160',
         ];
+
+        // Add image validation rules
+        if ($this->hasFile('image')) {
+            $rules['image'] = 'nullable|image|mimes:jpeg,jpg,png,gif,webp|max:5120'; // 5MB max
+        }
+
+        return $rules;
     }
 
     /**
@@ -58,19 +56,18 @@ class BlogCategoryRequest extends FormRequest
     {
         return [
             'title.required' => 'The category title is required.',
-            'title.max' => 'The category title may not be greater than 255 characters.',
+            'title.max' => 'The category title cannot exceed 255 characters.',
+            'slug.required' => 'The slug is required.',
             'slug.unique' => 'This slug is already taken.',
-            'slug.regex' => 'The slug must only contain lowercase letters, numbers, and hyphens.',
+            'slug.regex' => 'The slug must contain only lowercase letters, numbers, and hyphens.',
             'parent_id.exists' => 'The selected parent category does not exist.',
-            'parent_id.not_in' => 'A category cannot be its own parent.',
-            'status.required' => 'Please select a status.',
-            'status.in' => 'Status must be either 0 (inactive) or 1 (active).',
-            'image.url' => 'The featured image must be a valid URL.',
-            'image.max' => 'The featured image URL is too long.',
-            'description.max' => 'The description may not be greater than 1000 characters.',
-            'seo_title.max' => 'SEO title should not exceed 70 characters.',
-            'seo_keywords.max' => 'SEO keywords should not exceed 255 characters.',
-            'seo_description.max' => 'SEO description should not exceed 160 characters.',
+            'status.required' => 'Please select a status for the category.',
+            'image.image' => 'The file must be an image.',
+            'image.mimes' => 'The image must be a JPEG, PNG, GIF, or WebP file.',
+            'image.max' => 'The image size cannot exceed 5MB.',
+            'seo_title.max' => 'The SEO title cannot exceed 70 characters.',
+            'seo_keywords.max' => 'The SEO keywords cannot exceed 255 characters.',
+            'seo_description.max' => 'The SEO description cannot exceed 160 characters.',
         ];
     }
 
@@ -79,74 +76,18 @@ class BlogCategoryRequest extends FormRequest
      */
     protected function prepareForValidation(): void
     {
-        if ($this->parent_id === '' || $this->parent_id === '0') {
-            $this->merge(['parent_id' => null]);
-        }
-
-        if (is_string($this->status)) {
-            $this->merge(['status' => (int) $this->status === '1' ? 1 : 0]);
-        }
-
-        if (!in_array($this->status, [0, 1], true)) {
-            $this->merge(['status' => 1]);
-        }
-
-        if (empty($this->slug) && !empty($this->title)) {
+        // Convert status to boolean
+        if ($this->has('status')) {
             $this->merge([
-                'slug' => \Illuminate\Support\Str::slug($this->title)
+                'status' => $this->boolean('status'),
             ]);
         }
 
-        if ($this->image && filter_var($this->image, FILTER_VALIDATE_URL) === false) {
-            $this->merge(['image' => null]);
+        // Convert parent_id to null if it's '0'
+        if ($this->has('parent_id') && $this->input('parent_id') === '0') {
+            $this->merge([
+                'parent_id' => null,
+            ]);
         }
-    }
-
-    /**
-     * Configure the validator instance.
-     */
-    public function withValidator($validator): void
-    {
-        $validator->after(function ($validator) {
-            // Custom validation: prevent circular parent-child relationships
-            if ($this->parent_id && $this->route('blog_category')) {
-                $currentCategory = $this->route('blog_category');
-
-                // Check if the selected parent is a descendant of current category
-                if ($this->wouldCreateCircularReference($currentCategory->id, $this->parent_id)) {
-                    $validator->errors()->add(
-                        'parent_id',
-                        'Cannot set this category as parent because it would create a circular reference.'
-                    );
-                }
-            }
-
-            // Validate slug format more strictly
-            if ($this->slug) {
-                if (preg_match('/^-|-$/', $this->slug)) {
-                    $validator->errors()->add('slug', 'Slug cannot start or end with a hyphen.');
-                }
-                if (preg_match('/--/', $this->slug)) {
-                    $validator->errors()->add('slug', 'Slug cannot contain consecutive hyphens.');
-                }
-            }
-        });
-    }
-
-    /**
-     * Check if setting a parent would create a circular reference.
-     */
-    private function wouldCreateCircularReference(int $categoryId, int $proposedParentId): bool
-    {
-        $parent = BlogCategory::find($proposedParentId);
-
-        while ($parent) {
-            if ($parent->id == $categoryId) {
-                return true; // Circular reference detected
-            }
-            $parent = $parent->parent;
-        }
-
-        return false;
     }
 }

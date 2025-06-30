@@ -26,7 +26,6 @@ class BlogCategoryController extends Controller
             ->paginate($perPage)
             ->withQueryString();
 
-        // Get all parent categories for filter dropdown
         $parentCategories = BlogCategory::whereNull('parent_id')
             ->orderBy('title')
             ->get(['id', 'title']);
@@ -82,7 +81,6 @@ class BlogCategoryController extends Controller
      */
     public function edit(BlogCategory $blogCategory)
     {
-        // Exclude the current category and its descendants from parent options
         $parentCategories = BlogCategory::where('id', '!=', $blogCategory->id)
             ->whereNull('parent_id')
             ->whereNotIn('id', $this->getDescendantIds($blogCategory))
