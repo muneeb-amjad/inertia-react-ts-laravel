@@ -2,6 +2,22 @@ import React, { useEffect, useRef } from 'react';
 import { Label } from '@/components/ui/label';
 import InputError from '@/components/input-error';
 
+// Define proper types for CKEditor configuration
+interface CKEditorConfig {
+    placeholder?: string;
+    toolbar?: Array<string | { items: string[] }>;
+    heading?: {
+        options: Array<{
+            model: string;
+            view: string;
+            title: string;
+            class: string;
+        }>;
+    };
+    // Add other config properties as needed
+    [key: string]: unknown; // For any additional unknown properties
+}
+
 interface CKEditorProps {
     label?: string;
     name: string;
@@ -12,13 +28,41 @@ interface CKEditorProps {
     placeholder?: string;
     height?: number;
     className?: string;
-    config?: any;
+    config?: CKEditorConfig;
 }
 
+// Define type for ClassicEditor
 declare global {
     interface Window {
-        ClassicEditor: any;
+        ClassicEditor: {
+            create: (element: HTMLElement, config: CKEditorConfig) => Promise<CKEditorInstance>;
+        };
     }
+}
+
+// Define type for CKEditor instance
+interface CKEditorInstance {
+    getData: () => string;
+    setData: (data: string) => void;
+    destroy: () => void;
+    editing: {
+        view: {
+            change: (callback: (writer: CKEditorWriter) => void) => void;
+            document: {
+                getRoot: () => unknown;
+            };
+        };
+    };
+    model: {
+        document: {
+            on: (event: string, callback: () => void) => void;
+        };
+    };
+}
+
+// Define type for CKEditor writer
+interface CKEditorWriter {
+    setStyle: (property: string, value: string, element: unknown) => void;
 }
 
 export default function CKEditor({
@@ -34,7 +78,7 @@ export default function CKEditor({
                                      config = {}
                                  }: CKEditorProps) {
     const editorRef = useRef<HTMLDivElement>(null);
-    const editorInstanceRef = useRef<any>(null);
+    const editorInstanceRef = useRef<CKEditorInstance | null>(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -113,6 +157,8 @@ export default function CKEditor({
                     ...config
                 };
 
+                // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+                // @ts-expect-error
                 const editor = await window.ClassicEditor.create(editorRef.current, defaultConfig);
 
                 if (!isMounted) {
