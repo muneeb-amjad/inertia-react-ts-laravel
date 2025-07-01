@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
+import { Head, Link, useForm, usePage, router } from '@inertiajs/react';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from "@/components/ui/input"
 import {
@@ -58,8 +58,6 @@ export default function BlogCategoryForm() {
     ];
 
     const { data, setData, errors, post, put, reset, processing } = useForm({
-        _method: isEditing ? 'PUT' : 'POST',
-        parent_id: category?.parent_id?.toString() || '0',
         title: category?.title || '',
         slug: category?.slug || '',
         image: null as File | null,
@@ -73,23 +71,31 @@ export default function BlogCategoryForm() {
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
 
+        console.log('Form data being sent:', data);
+        console.log('Current errors:', errors);
+
         if (isEditing) {
-            put(route('blog-categories.update', category.id), {
+            // For updates with file uploads, use router.post with _method spoofing
+            router.post(route('blog-categories.update', category.id), {
+                _method: 'put',
+                ...data,
+            }, {
                 preserveScroll: true,
-                forceFormData: true,
                 onError: (errors) => {
-                    console.log("error :: ", errors);
+                    console.log("Update errors:", errors);
                 },
+                onSuccess: (page) => {
+                    console.log("Update successful:", page);
+                }
             });
         } else {
             post(route('blog-categories.store'), {
                 preserveScroll: true,
-                forceFormData: true,
                 onSuccess: () => {
                     reset();
                 },
                 onError: (errors) => {
-                    console.log("error :: ", errors);
+                    console.log("Create errors:", errors);
                 },
             });
         }
@@ -117,6 +123,20 @@ export default function BlogCategoryForm() {
         <AppLayout breadcrumbs={breadcrumbs}>
             <Head title={isEditing ? "Edit Blog Category" : "Create Blog Category"} />
             <div className="w-full py-6 px-4 sm:px-6 lg:px-8">
+                {/* Debug: Show all errors */}
+                {Object.keys(errors).length > 0 && (
+                    <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                        <h4 className="text-red-800 font-semibold mb-2">Validation Errors:</h4>
+                        <ul className="text-red-700 text-sm">
+                            {Object.entries(errors).map(([key, message]) => (
+                                <li key={key} className="mb-1">
+                                    <strong>{key}:</strong> {message}
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
+
                 <Card>
                     <CardHeader>
                         <div className="flex justify-between items-center w-full">
@@ -158,7 +178,7 @@ export default function BlogCategoryForm() {
 
                                     {/* Slug */}
                                     <div className="grid gap-2">
-                                        <Label htmlFor="slug">Slug</Label>
+                                        <Label htmlFor="slug">Slug *</Label>
                                         <Input
                                             id="slug"
                                             name="slug"
@@ -166,6 +186,7 @@ export default function BlogCategoryForm() {
                                             onChange={(e) => setData('slug', e.target.value)}
                                             className={errors.slug ? 'border-red-500' : ''}
                                             placeholder="category-slug"
+                                            required
                                         />
                                         <InputError message={errors.slug} />
                                     </div>
