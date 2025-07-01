@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class BlogCategoryFilter extends BaseFilter
 {
-    protected array $filters = ['search', 'status', 'parent_id'];
+    protected array $filters = ['search', 'status'];
 
     protected function search(?string $searchTerm)
     {
@@ -23,19 +23,9 @@ class BlogCategoryFilter extends BaseFilter
 
     protected function status(?string $status)
     {
-        if ($status && $status !== 'all') {
+        if (!is_null($status) && $status !== 'all') {
             $this->builder->where('status', $status);
         }
     }
 
-    protected function parent_id(?string $parentId)
-    {
-        if ($parentId && $parentId !== 'all') {
-            if ($parentId === 'root') {
-                $this->builder->whereNull('parent_id');
-            } else {
-                $this->builder->where('parent_id', $parentId);
-            }
-        }
-    }
 }

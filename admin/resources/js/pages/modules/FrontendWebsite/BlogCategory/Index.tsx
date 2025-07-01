@@ -3,22 +3,14 @@ import { Head, Link, router, usePage } from '@inertiajs/react';
 import { buttonVariants } from '@/components/ui/button';
 import { type BreadcrumbItem } from '@/types';
 import AppLayout from '@/layouts/app-layout';
-import Pagination from '@/components/pagination';
+import PaginationComponent from '@/components/pagination';
 import { useState, useEffect, useCallback } from 'react';
 import { PaginatedData } from '@/types';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 
 // Import our generic CRUD components
 import { CrudFilters } from '@/components/crud/CrudFilters';
 import { CrudTable } from '@/components/crud/CrudTable';
 
-// Blog Category type
 interface BlogCategory {
     id: number;
     parent_id: number | null;
@@ -123,7 +115,7 @@ export default function Index() {
         return () => clearTimeout(timeoutId);
     }, [selectedStatus, selectedParent, selectedPerPage, handleSearch, isInitialLoad]);
 
-    // Sync local state with URL parameters on page load
+    // Sync local state with URL parameters on a page load
     useEffect(() => {
         setSearchTerm(filters?.search || '');
         setSelectedStatus(filters?.status || 'all');
@@ -282,9 +274,17 @@ export default function Index() {
                             emptyMessage="No blog categories found."
                             emptyMessageWithFilters="No categories found matching your criteria."
                             hasActiveFilters={hasActiveFilters}
-                            actionsColumnClass="w-[20%]"
                         />
-                        <Pagination pagination={categories} />
+
+                        <PaginationComponent
+                            pagination={categories}
+                            filters={{
+                                search: searchTerm,
+                                status: selectedStatus,
+                                parent_id: selectedParent,
+                                per_page: selectedPerPage,
+                            }}
+                        />
                     </CardContent>
                 </Card>
             </div>
