@@ -12,23 +12,7 @@ class BlogCategory extends Model
 {
     use HasFactory;
 
-    protected $fillable = [
-        'parent_id',
-        'hash_id',
-        'title',
-        'slug',
-        'image',
-        'description',
-        'status',
-        'seo_title',
-        'seo_keywords',
-        'seo_description'
-    ];
-
-    protected $casts = [
-        'status' => 'string',
-    ];
-
+    protected $guarded = ['id'];
     /**
      * Apply all relevant filters.
      */
@@ -114,5 +98,17 @@ class BlogCategory extends Model
     public function scopeActive(Builder $query)
     {
         return $query->where('status', '1');
+    }
+
+    /**
+     * Get the full URL for the image
+     */
+    public function getImageUrlAttribute(): ?string
+    {
+        if (!$this->image) {
+            return null;
+        }
+
+        return '/storage/' . $this->image;
     }
 }

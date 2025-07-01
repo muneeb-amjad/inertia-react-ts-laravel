@@ -26,8 +26,9 @@ interface BlogCategory {
     title: string;
     slug: string;
     image: string;
+    image_url?: string;
     description: string;
-    status: string;
+    status: string | number;
     seo_title: string;
     seo_keywords: string;
     seo_description: string;
@@ -63,7 +64,7 @@ export default function BlogCategoryForm() {
         slug: category?.slug || '',
         image: null as File | null,
         description: category?.description || '',
-        status: category?.status ? '1' : '0',
+        status: category?.status === 1 || category?.status === '1' ? '1' : '0',
         seo_title: category?.seo_title || '',
         seo_keywords: category?.seo_keywords || '',
         seo_description: category?.seo_description || ''
@@ -125,7 +126,7 @@ export default function BlogCategoryForm() {
                             <div className="h-14 flex-none flex items-center justify-center">
                                 <Link
                                     className={buttonVariants({ variant: 'outline', size: 'sm' })}
-                                    href="{route('blog-categories.index')}"
+                                    href={route('blog-categories.index')}
                                 >
                                     <ArrowLeft className="h-4 w-4 mr-2" />
                                     Back
@@ -196,24 +197,41 @@ export default function BlogCategoryForm() {
                                     label="Featured Image"
                                     name="image"
                                     value={data.image}
-                                    currentImageUrl={category?.image}
+                                    currentImageUrl={category?.image_url}
                                     onChange={(file) => setData('image', file)}
                                     error={errors.image}
                                     className="mt-6"
                                 />
 
-                                {/* Description */}
-                                <CKEditor
-                                    label="Description"
-                                    name="description"
-                                    value={data.description}
-                                    onChange={(value) => setData('description', value)}
-                                    error={errors.description}
-                                    placeholder="Enter category description..."
-                                    height={150}
-                                    className="mt-6"
-                                    variant="full"
-                                />
+                                {/* Description with CKEditor */}
+                                <div className="mt-6">
+                                    <CKEditor
+                                        label="Description"
+                                        name="description"
+                                        value={data.description}
+                                        onChange={(value) => setData('description', value)}
+                                        error={errors.description}
+                                        placeholder="Enter category description..."
+                                        height={300}
+                                        config={{
+                                            toolbar: [
+                                                'heading',
+                                                '|',
+                                                'bold',
+                                                'italic',
+                                                '|',
+                                                'bulletedList',
+                                                'numberedList',
+                                                '|',
+                                                'link',
+                                                'blockQuote',
+                                                '|',
+                                                'undo',
+                                                'redo'
+                                            ]
+                                        }}
+                                    />
+                                </div>
                             </div>
 
                             {/* SEO Settings */}

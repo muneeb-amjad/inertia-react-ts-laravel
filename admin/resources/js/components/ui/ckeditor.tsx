@@ -57,8 +57,6 @@ export default function CKEditor({
                         '|',
                         'bold',
                         'italic',
-                        'underline',
-                        'strikethrough',
                         '|',
                         'bulletedList',
                         'numberedList',
@@ -70,12 +68,9 @@ export default function CKEditor({
                         'insertTable',
                         '|',
                         'link',
-                        'imageUpload',
                         '|',
                         'undo',
-                        'redo',
-                        '|',
-                        'sourceEditing'
+                        'redo'
                     ],
                     heading: {
                         options: [
@@ -196,7 +191,7 @@ export default function CKEditor({
                 {label} {required && <span className="text-red-500">*</span>}
             </Label>
 
-            <div className={`border rounded-md ${error ? 'border-red-500' : 'border-gray-300'}`}>
+            <div className={`border rounded-md ckeditor-wrapper ${error ? 'border-red-500' : 'border-gray-300'}`}>
                 <div
                     ref={editorRef}
                     className="ckeditor-container"
@@ -205,31 +200,33 @@ export default function CKEditor({
 
             {error && <InputError message={error} />}
 
-            {/* Add some basic CKEditor styling */}
-            <style jsx>{`
-                .ckeditor-container .ck-editor__editable {
-                    border: none !important;
-                    box-shadow: none !important;
-                }
+            {/* Add some basic CKEditor styling using a style tag without jsx */}
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                    .ckeditor-wrapper .ck-editor__editable {
+                        border: none !important;
+                        box-shadow: none !important;
+                    }
 
-                .ckeditor-container .ck-editor__editable:focus {
-                    border: none !important;
-                    box-shadow: none !important;
-                }
+                    .ckeditor-wrapper .ck-editor__editable:focus {
+                        border: none !important;
+                        box-shadow: none !important;
+                    }
 
-                .ckeditor-container .ck.ck-editor {
-                    border: none !important;
-                }
+                    .ckeditor-wrapper .ck.ck-editor {
+                        border: none !important;
+                    }
 
-                .ckeditor-container .ck.ck-editor__main > .ck-editor__editable {
-                    background: white;
-                    border-radius: 0 0 6px 6px;
-                }
+                    .ckeditor-wrapper .ck.ck-editor__main > .ck-editor__editable {
+                        background: white;
+                        border-radius: 0 0 6px 6px;
+                    }
 
-                .ckeditor-container .ck.ck-editor__top {
-                    border-radius: 6px 6px 0 0;
-                }
-            `}</style>
+                    .ckeditor-wrapper .ck.ck-editor__top {
+                        border-radius: 6px 6px 0 0;
+                    }
+                `
+            }} />
         </div>
     );
 }

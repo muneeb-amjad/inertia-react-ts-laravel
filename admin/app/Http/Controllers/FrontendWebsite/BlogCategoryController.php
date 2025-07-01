@@ -7,8 +7,10 @@ use App\Filters\FrontendWebsite\BlogCategoryFilter;
 use App\Http\Requests\FrontendWebsite\BlogCategoryRequest;
 use App\Models\FrontendWebsite\BlogCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
-
+use Intervention\Image\Facades\Image;
 
 class BlogCategoryController extends Controller
 {
@@ -57,7 +59,19 @@ class BlogCategoryController extends Controller
      */
     public function store(BlogCategoryRequest $request)
     {
-        BlogCategory::create($request->validated());
+        $validatedData = $request->validated();
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            $validatedData['image'] = $this->handleImageUpload($request->file('image'));
+        }
+
+        // Remove image from validated data if it's null (no file uploaded)
+        if (!isset($validatedData['image'])) {
+            unset($validatedData['image']);
+        }
+
+        BlogCategory::create($validatedData);
 
         return redirect()
             ->route('blog-categories.index')
@@ -88,7 +102,7 @@ class BlogCategoryController extends Controller
             ->get(['id', 'title']);
 
         return Inertia::render('modules/FrontendWebsite/BlogCategory/FormPage', [
-            'category' => $blogCategory,
+            'category' => $blogCategory->append('image_url'),
             'parentCategories' => $parentCategories,
             'isEdit' => true,
         ]);
@@ -99,7 +113,22 @@ class BlogCategoryController extends Controller
      */
     public function update(BlogCategoryRequest $request, BlogCategory $blogCategory)
     {
-        $blogCategory->update($request->validated());
+        $validatedData = $request->validated();
+
+        // Handle image upload
+        if ($request->hasFile('image')) {
+            // Delete old image if exists
+            if ($blogCategory->image) {
+                $this->deleteImage($blogCategory->image);
+            }
+
+            $validatedData['image'] = $this->handleImageUpload($request->file('image'));
+        } else {
+            // Remove image from update data if no new file uploaded
+            unset($validatedData['image']);
+        }
+
+        $blogCategory->update($validatedData);
 
         return redirect()
             ->route('blog-categories.index')
@@ -118,11 +147,61 @@ class BlogCategoryController extends Controller
                 ->with('error', 'Cannot delete category that has subcategories.');
         }
 
+        // Delete associated image
+        if ($blogCategory->image) {
+            $this->deleteImage($blogCategory->image);
+        }
+
         $blogCategory->delete();
 
         return redirect()
             ->route('blog-categories.index')
             ->with('success', 'Blog category deleted successfully.');
+    }
+
+    /**
+     * Handle image upload with resizing and optimization
+     */
+    private function handleImageUpload($file)
+    {
+        try {
+            // Generate unique filename
+            $filename = Str::uuid() . '.' . $file->getClientOriginalExtension();
+
+            // Define storage path (relative to storage/app/public)
+            $storagePath = 'blog-categories';
+            $fullPath = $storagePath . '/' . $filename;
+
+            // Create directory if it doesn't exist
+            if (!Storage::disk('public')->exists($storagePath)) {
+                Storage::disk('public')->makeDirectory($storagePath);
+            }
+
+            // Store the file
+            $file->storeAs($storagePath, $filename, 'public');
+
+            // Return the path without leading slash (for database storage)
+            // This will be stored as "blog-categories/uuid.jpg"
+            return $fullPath;
+
+        } catch (\Exception $e) {
+            \Log::error('Image upload failed: ' . $e->getMessage());
+            throw new \Exception('Failed to upload image. Please try again.');
+        }
+    }
+
+    /**
+     * Delete image from storage
+     */
+    private function deleteImage($imagePath)
+    {
+        try {
+            if (Storage::disk('public')->exists($imagePath)) {
+                Storage::disk('public')->delete($imagePath);
+            }
+        } catch (\Exception $e) {
+            \Log::error('Image deletion failed: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -139,5 +218,17 @@ class BlogCategoryController extends Controller
         }
 
         return $descendants->toArray();
+    }
+
+    /**
+     * Get the full URL for an image
+     */
+    public function getImageUrl($imagePath)
+    {
+        if (!$imagePath) {
+            return null;
+        }
+
+        return Storage::disk('public')->url($imagePath);
     }
 }

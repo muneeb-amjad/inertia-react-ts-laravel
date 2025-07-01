@@ -35,15 +35,19 @@ export default function ImageUpload({
                                         helpText = 'PNG, JPG, GIF, WebP up to 5MB'
                                     }: ImageUploadProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const [imagePreview, setImagePreview] = useState<string>(currentImageUrl || '');
+    const [imagePreview, setImagePreview] = useState<string>('');
     const [dragOver, setDragOver] = useState(false);
 
-    // Update preview when currentImageUrl changes
+    // Update preview when currentImageUrl changes or component mounts
     useEffect(() => {
-        if (currentImageUrl) {
+        if (currentImageUrl && !value) {
+            // Show current image only when no new file is selected
             setImagePreview(currentImageUrl);
+        } else if (!currentImageUrl && !value) {
+            // Clear preview when no current image and no new file
+            setImagePreview('');
         }
-    }, [currentImageUrl]);
+    }, [currentImageUrl, value]);
 
     const validateFile = (file: File): string | null => {
         // Validate file type
@@ -63,7 +67,8 @@ export default function ImageUpload({
     const handleFileChange = (file: File | null) => {
         if (!file) {
             onChange(null);
-            setImagePreview('');
+            // Reset to current image if available, otherwise clear
+            setImagePreview(currentImageUrl || '');
             return;
         }
 
@@ -75,7 +80,7 @@ export default function ImageUpload({
 
         onChange(file);
 
-        // Create preview
+        // Create preview for new file
         const reader = new FileReader();
         reader.onload = (event) => {
             setImagePreview(event.target?.result as string);
@@ -118,6 +123,10 @@ export default function ImageUpload({
         fileInputRef.current?.click();
     };
 
+    // Determine what to show as preview
+    const showPreview = imagePreview || currentImageUrl;
+    const isNewFile = !!value;
+
     return (
         <div className={`grid gap-4 ${className}`}>
             <Label htmlFor={name}>
@@ -151,7 +160,7 @@ export default function ImageUpload({
                 >
                     <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
                     <p className="text-sm text-gray-600">
-                        {dragDropText}
+                        {showPreview ? 'Click to change image' : dragDropText}
                     </p>
                     {helpText && (
                         <p className="text-xs text-gray-400 mt-1">
@@ -164,21 +173,40 @@ export default function ImageUpload({
             </div>
 
             {/* Image Preview */}
-            {imagePreview && (
-                <div className="relative inline-block">
-                    <img
-                        src={imagePreview}
-                        alt="Preview"
-                        className={`object-cover rounded border shadow-sm ${previewClassName}`}
-                        onError={() => setImagePreview('')}
-                    />
-                    <button
-                        type="button"
-                        onClick={removeImage}
-                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors"
-                    >
-                        <X className="h-3 w-3" />
-                    </button>
+            {showPreview && (
+                <div className="space-y-2">
+                    <div className="relative inline-block">
+                        <img
+                            src={showPreview}
+                            alt="Preview"
+                            className={`object-cover rounded border shadow-sm ${previewClassName}`}
+                            onError={() => {
+                                console.error('Failed to load image:', showPreview);
+                                setImagePreview('');
+                            }}
+                        />
+                        <button
+                            type="button"
+                            onClick={removeImage}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600 transition-colors shadow-sm"
+                            title="Remove image"
+                        >
+                            <X className="h-3 w-3" />
+                        </button>
+                    </div>
+
+                    {/* Image status indicator */}
+                    <div className="text-xs text-gray-500">
+                        {isNewFile ? (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full bg-green-100 text-green-800">
+                                New file selected: {value?.name}
+                            </span>
+                        ) : (
+                            <span className="inline-flex items-center px-2 py-1 rounded-full bg-blue-100 text-blue-800">
+                                Current image
+                            </span>
+                        )}
+                    </div>
                 </div>
             )}
         </div>
