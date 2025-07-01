@@ -45,7 +45,7 @@ type SharedData = {
 };
 
 export default function BlogCategoryForm() {
-    const { parentCategories, category } = usePage<SharedData>().props;
+    const {  category } = usePage<SharedData>().props;
     const isEditing = !!category;
 
     const breadcrumbs: BreadcrumbItem[] = [
@@ -57,7 +57,7 @@ export default function BlogCategoryForm() {
         },
     ];
 
-    const { data, setData, errors, post, put, reset, processing } = useForm({
+    const { data, setData, errors, post, reset, processing } = useForm({
         title: category?.title || '',
         slug: category?.slug || '',
         image: null as File | null,
